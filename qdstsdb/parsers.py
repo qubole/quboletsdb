@@ -2,6 +2,7 @@ __author__ = 'rajatv'
 
 import argparse
 from qdstsdb import __version__
+from cluster import Cluster
 
 
 def setup_parsers():
@@ -18,5 +19,6 @@ def setup_parsers():
                              help="Turn on debug logging and print to log file")
 
     subparsers = argparser.add_subparsers()
+    Cluster.setup_parser(subparsers)
 
     return config_parser, argparser
