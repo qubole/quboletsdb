@@ -6,7 +6,7 @@ import sys
 import traceback
 import logging
 from parsers import setup_parsers
-
+from qds_sdk.qubole import Qubole
 
 def load_config(config_args):
     config_candidates = []
@@ -53,6 +53,11 @@ def main():
         root.setLevel(logging.DEBUG)
         root.addHandler(fh)
     try:
+        Qubole.configure(
+            api_token=config.get("default", "auth_token"),
+            api_url=config.get("default", "api_url"),
+            skip_ssl_cert_check=True
+        )
         args.func(config, args)
     finally:
         logging.debug("Cleaning up")
