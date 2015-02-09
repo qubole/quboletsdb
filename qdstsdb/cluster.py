@@ -1,8 +1,12 @@
 __author__ = 'rajatv'
 import logging
+import inspect
+import os
 import qds_sdk.cluster
 from time import sleep
 from argparse import ArgumentDefaultsHelpFormatter
+from S3 import S3Bucket
+from urlparse import urlparse
 
 
 class Cluster(object):
@@ -28,6 +32,9 @@ class Cluster(object):
                                        default="m3.xlarge", help="Instance type of slave node")
         cls.create_parser.add_argument("-n", "--node-bootstrap",
                                        default="opentsdb.sh", help="Name of the node bootstrap file")
+        cls.create_parser.add_argument("-k", "--skip", help="Skip some phases of create", default=[],
+                                       action="append", choices=["cluster", "s3"])
+        cls.create_parser.add_argument("-l", "--s3-location", help="Default S3 location for the account")
         cls.create_parser.add_argument("-n", "--size",
                                        default=3, help="Size of the cluster")
 
@@ -52,7 +59,9 @@ class Cluster(object):
         obj.master_type = args.master_type
         obj.slave_type = args.slave_type
         obj.size = args.size
-        obj.node_bootstrap
+        obj.node_bootstrap = args.node_bootstrap
+        obj.skip = args.skip
+        obj.s3_location = args.s3_location
         obj.create()
 
     @classmethod
@@ -68,35 +77,56 @@ class Cluster(object):
     def __init__(self, config, args):
         self.config = config
         self.label = args.label
+        self.base_path = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
 
         self.region = None
         self.master_type = None
         self.slave_type = None
         self.size = None
         self.node_bootstrap = None
+        self.skip = None
+        self.s3_location = None
 
     def create(self):
-        cluster_settings = qds_sdk.cluster.ClusterInfo(
-            label=self.label,
-            aws_access_key_id=self.config.get("default", "access_key"),
-            aws_secret_access_key=self.config.get("default", "secret_key"),
-            disallow_cluster_termination=True,
-            node_bootstrap_file=self.node_bootstrap
-        )
+        if "cluster" not in self.skip:
+            cluster_settings = qds_sdk.cluster.ClusterInfo(
+                label=self.label,
+                aws_access_key_id=self.config.get("default", "access_key"),
+                aws_secret_access_key=self.config.get("default", "secret_key"),
+                disallow_cluster_termination=True,
+                node_bootstrap_file=self.node_bootstrap
+            )
 
-        cluster_settings.set_ec2_settings(
-            aws_region='us-east-1'
-        )
+            cluster_settings.set_ec2_settings(
+                aws_region='us-east-1'
+            )
 
-        cluster_settings.set_hadoop_settings(
-            master_instance_type=self.master_type,
-            slave_instance_type=self.slave_type,
-            initial_nodes=self.size,
-            max_nodes=self.size,
-            use_hbase=1
-        )
+            cluster_settings.set_hadoop_settings(
+                master_instance_type=self.master_type,
+                slave_instance_type=self.slave_type,
+                initial_nodes=self.size,
+                max_nodes=self.size,
+                use_hbase=1
+            )
 
-        qds_sdk.cluster.Cluster.create(cluster_settings.minimal_payload())
+            qds_sdk.cluster.Cluster.create(cluster_settings.minimal_payload())
+
+        if "s3" not in self.skip:
+            # Parse the s3 url
+            url = urlparse(self.s3_location)
+            s3 = S3Bucket(self.config, url.netloc)
+
+            #Conf
+            copy_src = "%s/../opentsdb/opentsdb.conf" % self.base_path
+            s3.write_file(copy_src, "%s/scripts/opentsdb/" % url.path)
+
+            #Node bootstrap
+            filein = open(self.base_path + "/../scripts/udf.sh")
+            src = string.Template(filein.read())
+            d = {'runlist': resolved_runlist, 'environment': args.environment}
+            bootstrap = src.safe_substitute(d)
+
+            s3.write("%s/scripts/hadoop/opentsdb.sh", bootstrap)
 
     def start(self):
         qds_sdk.cluster.Cluster.start(self.label)
