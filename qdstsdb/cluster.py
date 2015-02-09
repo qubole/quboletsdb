@@ -26,6 +26,8 @@ class Cluster(object):
                                        default="c3.xlarge", help="Instance type of master node")
         cls.create_parser.add_argument("-s", "--slave-type",
                                        default="m3.xlarge", help="Instance type of slave node")
+        cls.create_parser.add_argument("-n", "--node-bootstrap",
+                                       default="opentsdb.sh", help="Name of the node bootstrap file")
         cls.create_parser.add_argument("-n", "--size",
                                        default=3, help="Size of the cluster")
 
@@ -50,6 +52,7 @@ class Cluster(object):
         obj.master_type = args.master_type
         obj.slave_type = args.slave_type
         obj.size = args.size
+        obj.node_bootstrap
         obj.create()
 
     @classmethod
@@ -70,13 +73,15 @@ class Cluster(object):
         self.master_type = None
         self.slave_type = None
         self.size = None
+        self.node_bootstrap = None
 
     def create(self):
         cluster_settings = qds_sdk.cluster.ClusterInfo(
             label=self.label,
             aws_access_key_id=self.config.get("default", "access_key"),
             aws_secret_access_key=self.config.get("default", "secret_key"),
-            disallow_cluster_termination=True
+            disallow_cluster_termination=True,
+            node_bootstrap_file=self.node_bootstrap
         )
 
         cluster_settings.set_ec2_settings(
