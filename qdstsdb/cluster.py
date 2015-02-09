@@ -23,9 +23,9 @@ class Cluster(object):
         cls.create_parser.add_argument("-r", "--region",
                                        default="us-east-1", help="AWS Region")
         cls.create_parser.add_argument("-m", "--master-type",
-                                       default="c1.medium", help="Instance type of master node")
+                                       default="c3.xlarge", help="Instance type of master node")
         cls.create_parser.add_argument("-s", "--slave-type",
-                                       default="m1.small", help="Instance type of slave node")
+                                       default="m3.xlarge", help="Instance type of slave node")
         cls.create_parser.add_argument("-n", "--size",
                                        default=3, help="Size of the cluster")
 
@@ -75,7 +75,8 @@ class Cluster(object):
         cluster_settings = qds_sdk.cluster.ClusterInfo(
             label=self.label,
             aws_access_key_id=self.config.get("default", "access_key"),
-            aws_secret_access_key=self.config.get("default", "secret_key")
+            aws_secret_access_key=self.config.get("default", "secret_key"),
+            disallow_cluster_termination=True
         )
 
         cluster_settings.set_ec2_settings(
