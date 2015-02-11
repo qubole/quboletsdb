@@ -9,14 +9,11 @@ NODE_BOOTSTRAP_VERSION=$qdstsdb_version
 mkdir -p /media/ephemeral1/opentsdb/tmp
 hadoop dfs -get $s3_location/opentsdb.conf /media/ephemeral1/opentsdb/opentsdb.conf
 
-# Create tables
-cd /media/ephemeral1/opentsdb//opentsdb-2.0.1/
-env COMPRESSION=NONE HBASE_HOME=/usr/lib/hbase ./src/create_table.sh
-
 IS_MASTER="false"
-if [ -f /mnt/var/lib/info/instance.json ]
+NUM=$(ps auxwww | grep node_boot | wc -l)
+if [ $NUM > 0 ]
 then
-  IS_MASTER=`cat /mnt/var/lib/info/instance.json | tr -d '\n ' | sed -n 's|.*\"isMaster\":\([^,]*\).*|\1|p'`
+  IS_MASTER="true"
 fi
 
 # only runs on master node
@@ -43,7 +40,7 @@ TSD_INSTALL=/usr/share/opentsdb
 sudo chmod 755 $TSD_INSTALL/bin/tsdb
 
 # cron to clean the cache directory
-at <<-EOF > $TSD_HOME/clean_cache.sh
+cat <<-EOF > $TSD_HOME/clean_cache.sh
 #!/bin/bash
 sudo /usr/share/opentsdb/tools/clean_cache.sh
 EOF
@@ -66,8 +63,8 @@ chmod 755 $TSD_HOME/tsdb-status.sh
 #
 echo "Initializing TSD..."
 # check zookeeper connectivity
-RUOK=\`echo ruok | nc -w 5 localhost 2181\`
-if [ "\$RUOK" != "imok" ]; then
+RUOK=`echo ruok | nc -w 5 localhost 2181`
+if [ "$RUOK" != "imok" ]; then
   echo "Cannot connect to Zookeeper."
   exit 1
 fi
