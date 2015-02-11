@@ -10,10 +10,9 @@ mkdir -p /media/ephemeral1/opentsdb/tmp
 hadoop dfs -get $s3_location/opentsdb.conf /media/ephemeral1/opentsdb/opentsdb.conf
 
 #Check if master
-source /usr/lib/hustler/bin/qubole-bash-lib.sh
-IS_MASTER=$(nodeinfo is_master)
+source /usr/lib/hustler/bin/nodeinfo_src.sh
 # only runs on master node
-if [ "$IS_MASTER" = 1 ]; then
+if [ "$_is_master" = "1" ]; then
   exit 0
 fi
 
