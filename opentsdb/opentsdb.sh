@@ -9,15 +9,11 @@ NODE_BOOTSTRAP_VERSION=$qdstsdb_version
 mkdir -p /media/ephemeral1/opentsdb/tmp
 hadoop dfs -get $s3_location/opentsdb.conf /media/ephemeral1/opentsdb/opentsdb.conf
 
-IS_MASTER="false"
-NUM=$(ps auxwww | grep node_boot | wc -l)
-if [ $NUM > 0 ]
-then
-  IS_MASTER="true"
-fi
-
+#Check if master
+source /usr/lib/hustler/bin/qubole-bash-lib.sh
+IS_MASTER=$(nodeinfo is_master)
 # only runs on master node
-if [ "$IS_MASTER" = "false" ]; then
+if [ "$IS_MASTER" = 1 ]; then
   exit 0
 fi
 
