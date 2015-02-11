@@ -1,6 +1,9 @@
 #!/bin/bash
-
 #Heavily inspired by https://github.com/awslabs/emr-bootstrap-actions/blob/master/opentsdb/install-opentsdb.sh
+
+#For getting node information. For e.g. - is this a master node.
+source /usr/lib/hustler/bin/nodeinfo_src.sh
+
 set -e -x
 VERSION=2.0.1
 NODE_BOOTSTRAP_VERSION=$qdstsdb_version
@@ -10,9 +13,7 @@ mkdir -p /media/ephemeral1/opentsdb/tmp
 hadoop dfs -get $s3_location/opentsdb.conf /media/ephemeral1/opentsdb/opentsdb.conf
 
 #Check if master
-source /usr/lib/hustler/bin/nodeinfo_src.sh
-# only runs on master node
-if [ "$_is_master" = "1" ]; then
+if [ "$_is_master" = "0" ]; then
   exit 0
 fi
 
