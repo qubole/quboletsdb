@@ -75,6 +75,6 @@ echo stats | nc -w 1 localhost 4242 \
  | awk '{ print $1 }' | sort -u \
  | xargs $TSD_INSTALL/bin/tsdb mkmetric
 # put the metrics to tsd every minute
-sudo sh -c "echo '* * * * *   hadoop     bash $TSD_HOME/tsdb-status.sh > $TSD_HOME/cron.log 2>&1 ' >> /etc/crontab"
+(crontab -l 2>/dev/null; echo "* * * * * $TSD_HOME/tsdb-status.sh > $TSD_HOME/cron.log 2>&1") | crontab -
 echo "Completed initializing TSD."
 echo "Check the TSD web UI at http://localhost:4242/"
