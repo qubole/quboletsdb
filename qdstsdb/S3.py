@@ -35,7 +35,7 @@ class S3Bucket:
 
         key.set_contents_from_string(contents)
 
-    def write_file(self, path, filename):
+    def write_file(self, filename, path):
         key = self.bucket.new_key(path)
         fp = open(filename)
         key.set_contents_from_file(fp)

@@ -59,7 +59,18 @@ chmod 755 $TSD_HOME/tsdb-status.sh
 #
 echo "Initializing TSD..."
 # check zookeeper connectivity
-RUOK=`echo ruok | nc -w 5 localhost 2181`
+for i in 1 2 3 4 5 6 7 8 9; do 
+  echo "zxcv"
+  RUOK=`echo ruok | nc -w 5 localhost 2181`
+  echo "Wait for zookeeper"
+  if [ "$RUOK" != "imok" ]; then
+    echo "Cannot connect to Zookeeper.Retrying"
+    sleep 10
+  fi
+done
+
+echo "qwerty"
+
 if [ "$RUOK" != "imok" ]; then
   echo "Cannot connect to Zookeeper."
   exit 1

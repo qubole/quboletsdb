@@ -15,7 +15,7 @@ def setup_parsers():
     debug_group = argparser.add_mutually_exclusive_group()
     debug_group.add_argument("-d", "--debug", action="store_true", default=False,
                              help="Turn on debug logging and print to stdout")
-    debug_group.add_argument("-l", "--log", dest="log_file",
+    debug_group.add_argument("-x", "--log", dest="log_file",
                              help="Turn on debug logging and print to log file")
 
     subparsers = argparser.add_subparsers()

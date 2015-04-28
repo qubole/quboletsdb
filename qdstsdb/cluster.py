@@ -1,6 +1,7 @@
 __author__ = 'rajatv'
 import logging
 import inspect
+import string
 import os
 import qds_sdk.cluster
 from time import sleep
@@ -34,9 +35,9 @@ class Cluster(object):
                                        default="opentsdb.sh", help="Name of the node bootstrap file")
         cls.create_parser.add_argument("-k", "--skip", help="Skip some phases of create", default=[],
                                        action="append", choices=["cluster", "s3"])
-        cls.create_parser.add_argument("-l", "--s3-location", help="Default S3 location for the account")
-        cls.create_parser.add_argument("-n", "--size",
-                                       default=3, help="Size of the cluster")
+        cls.create_parser.add_argument("-z", "--s3-location", help="Default S3 location for the account")
+        cls.create_parser.add_argument("-o", "--size",
+                                       default=2, help="Size of the cluster")
 
         cls.create_parser.set_defaults(func=cls.create_cmd)
 
@@ -118,15 +119,23 @@ class Cluster(object):
 
             #Conf
             copy_src = "%s/../opentsdb/opentsdb.conf" % self.base_path
-            s3.write_file(copy_src, "%s/scripts/opentsdb/" % url.path)
+            conf_file = open(copy_src).read()
+            s3.write("%s/scripts/opentsdb/opentsdb.conf"% url.path, conf_file)
+
+            print "*******"
+            print url.path
+            print url
+            print self.s3_location
+            print "*******"
+
 
             #Node bootstrap
-            filein = open(self.base_path + "/../scripts/udf.sh")
+            filein = open(self.base_path + "/../opentsdb/opentsdb.sh")
             src = string.Template(filein.read())
-            d = {'runlist': resolved_runlist, 'environment': args.environment}
+            d = {'s3_location': "%s/scripts/opentsdb" % self.s3_location, 'qdstsdb_version': '0.1'}
             bootstrap = src.safe_substitute(d)
 
-            s3.write("%s/scripts/hadoop/opentsdb.sh", bootstrap)
+            s3.write("%s/scripts/hadoop/opentsdb.sh"% url.path, bootstrap)
 
     def start(self):
         qds_sdk.cluster.Cluster.start(self.label)
@@ -141,7 +150,7 @@ class Cluster(object):
             self.cluster_bringup_timeout -= self.wait_time
             sleep(self.wait_time)
 
-        if qds_sdk.cluster.Cluster.status(clabel)['state'] != 'UP':
+        if qds_sdk.cluster.Cluster.status(self.label)['state'] != 'UP':
             raise Exception("Cluster %d failed to start" % cluster_id)
 
     def stop(self):
